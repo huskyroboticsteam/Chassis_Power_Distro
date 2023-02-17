@@ -1,0 +1,8 @@
+C:/Users/fskyy/OneDrive/Documents/Husky\ Robotics/Chassis_Power_Distro/ChassisPowerDistro.cydsn/CortexM0/ARM_GCC_541/Debug/CyBootAsmGnu.o : C:/Users/fskyy/OneDrive/Documents/Husky\ Robotics/Chassis_Power_Distro/ChassisPowerDistro.cydsn/Generated_Source/PSoC4/CyBootAsmGnu.s C:/Users/fskyy/OneDrive/Documents/Husky\ Robotics/Chassis_Power_Distro/ChassisPowerDistro.cydsn/Generated_Source/PSoC4/cydevicegnu_trm.inc C:/Users/fskyy/OneDrive/Documents/Husky\ Robotics/Chassis_Power_Distro/ChassisPowerDistro.cydsn/Generated_Source/PSoC4/cyfittergnu.inc 
+
+C:/Users/fskyy/OneDrive/Documents/Husky\ Robotics/Chassis_Power_Distro/ChassisPowerDistro.cydsn/Generated_Source/PSoC4/CyBootAsmGnu.s : 
+
+C:/Users/fskyy/OneDrive/Documents/Husky\ Robotics/Chassis_Power_Distro/ChassisPowerDistro.cydsn/Generated_Source/PSoC4/cydevicegnu_trm.inc : 
+
+C:/Users/fskyy/OneDrive/Documents/Husky\ Robotics/Chassis_Power_Distro/ChassisPowerDistro.cydsn/Generated_Source/PSoC4/cyfittergnu.inc : 
+
