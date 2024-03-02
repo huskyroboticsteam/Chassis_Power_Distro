@@ -1,0 +1,3 @@
+[submodule "Chassis Power Distro.cydsn/HindsightCAN"]
+	path = Chassis Power Distro.cydsn/HindsightCAN
+	url = https://github.com/huskyroboticsteam/HindsightCAN.git

@@ -1,6 +1,0 @@
-C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\default\CyAnnotationLibrary\CyAnnotationLibrary.cylib\CyAnnotationLibrary.cyprj|01cc881a-1878-43e9-887b-9850d85f71a2
-C:\Users\fskyy\OneDrive\Documents\PSoC Creator\4.4\Downloads ( 4.4).cylib\Downloads ( 4.4).cyprj|fb2a986c-db08-456e-84fa-97ce51ea9d6b
-C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibraryupdates\CyComponentLibraryUpdates.cylib\CyComponentLibraryUpdates.cyprj|1945dd2c-27ec-45b1-81f9-271fdebece26
-C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibrary\CyComponentLibrary.cylib\CyComponentLibrary.cyprj|8ddf9fa4-8fdb-43c8-bac3-ee80e69381f6
-C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cyprimitives\CyPrimitives.cylib\CyPrimitives.cyprj|d7398852-b9f4-45a4-9164-c68f3cb88459
-C:\Users\fskyy\OneDrive\Documents\Husky Robotics\Chassis_Power_Distro\ChassisPowerDistro.cydsn\ChassisPowerDistro.cyprj|5e4c7f6b-ccce-4fd9-9d3a-67ab6d4ae9fe

@@ -1,1 +1,3 @@
-# Chassis_Power_Distro_PY2023
+# Chassis Power Distro
+
+Adapt this project to make board firmware!
