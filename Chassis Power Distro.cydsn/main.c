@@ -52,11 +52,14 @@ int main(void)
 { 
     Initialize();
     int err;
+    uint8_t current[2];
+    CANPacket packetToSend;
+    CANPacket recievedPacket;
     
     for(;;)
     {
         err = 0;
-        switch(GetState()) {
+        /*switch(GetState()) {
             case(UNINIT):
                 SetStateTo(CHECK_CAN);
                 break;
@@ -87,7 +90,32 @@ int main(void)
             DebugPrint(DBG_UART_UartGetByte());
         }
         
-        CyDelay(100);
+        CyDelay(100);*/
+        
+        //Try to recieve can packet
+        int err = PollAndReceiveCANPacket(&recievedPacket);
+        
+        //Check if recieved packet
+        if(!err){      
+            //Get Packet ID
+            uint16_t packetID = GetPacketID(&recievedPacket);
+            if(packetID == 0xF5){
+                //Populate can packet
+                AssembleTelemetryReportPacket(&packetToSend, 0x02, 0x01, 0x01, (current[0] << 8) + current[1]);
+        
+                //send Can Packet
+                SendCANPacket(&packetToSend);
+            }
+        }
+        
+        getCurrent(current);
+        Print("Current: ");
+        PrintInt((current[0] << 8) + current[1]);
+        Print("\n\r");
+        
+        CyDelay(1000);
+        
+        
     }
 }
 
@@ -107,6 +135,11 @@ void Initialize(void) {
 
     isr_Button_1_StartEx(Button_1_Handler);
     isr_Period_Reset_StartEx(Period_Reset_Handler);
+    CyGlobalIntEnable;
+    
+    PrintInt(init_INA226());
+    Print("\r\nINITIALIZING\n\r");
+    DBG_UART_Start();
 }
 
 void DebugPrint(char input) {

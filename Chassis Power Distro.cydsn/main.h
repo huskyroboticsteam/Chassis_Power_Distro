@@ -1,3 +1,4 @@
+
 /* ========================================
  *
  * Copyright YOUR COMPANY, THE YEAR
@@ -13,6 +14,7 @@
    
 #include "cyapicallbacks.h"
 #include <stdint.h>
+#include "INA226.h"
         
 #define ON  1
 #define OFF 0
@@ -23,11 +25,12 @@
 #define PrintChar(character) DBG_UART_UartPutChar(character)
 #define PrintInt(integer) DBG_UART_UartPutString(itoa(integer, txData, 10))
 #define PrintIntBin(integer) DBG_UART_UartPutString(itoa(integer, txData, 2))
+//#define PrintInt(integer) DBG_UART_UartPutString(itoa(integer, debugOutput, 10))
+//#define PrintIntBin(integer) DBG_UART_UartPutString(itoa(integer, debugOutput, 2))
 
 void Initialize(void);
 int getSerialAddress();
 void DebugPrint(char input);
 void DisplayErrorCode(uint8_t code);
-
-
+char debugOutput[32];
 /* [] END OF FILE */
