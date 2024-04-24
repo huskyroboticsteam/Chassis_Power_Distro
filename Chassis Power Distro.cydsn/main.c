@@ -24,6 +24,8 @@
 volatile uint8_t CAN_time_LED = 0;
 volatile uint8_t ERROR_time_LED = 0;
 
+uint16 current, voltage;
+
 // UART stuff
 char txData[TX_DATA_SIZE];
 
@@ -52,70 +54,40 @@ int main(void)
 { 
     Initialize();
     int err;
-    uint8_t current[2];
     CANPacket packetToSend;
     CANPacket recievedPacket;
-    
+   
     for(;;)
     {
         err = 0;
-        /*switch(GetState()) {
-            case(UNINIT):
-                SetStateTo(CHECK_CAN);
-                break;
-            case(CHECK_CAN):
-                if (!PollAndReceiveCANPacket(&can_recieve)) {
-                    LED_CAN_Write(ON);
-                    CAN_time_LED = 0;
-                    err = ProcessCAN(&can_recieve, &can_send);
-                }
-                if (GetMode() == MODE1)
-                    SetStateTo(DO_MODE1);
-                else 
-                    SetStateTo(CHECK_CAN);
-                break;
-            case(DO_MODE1):
-                // mode 1 tasks
-                SetStateTo(CHECK_CAN);
-                break;
-            default:
-                err = ERROR_INVALID_STATE;
-                SetStateTo(UNINIT);
-                break;
-        }
-        
-        if (err) DisplayErrorCode(err);
-        
-        if (DBG_UART_SpiUartGetRxBufferSize()) {
-            DebugPrint(DBG_UART_UartGetByte());
-        }
-        
-        CyDelay(100);*/
         
         //Try to recieve can packet
         int err = PollAndReceiveCANPacket(&recievedPacket);
         
-        //Check if recieved packet
+        // Check if recieved packet
         if(!err){      
             //Get Packet ID
             uint16_t packetID = GetPacketID(&recievedPacket);
             if(packetID == 0xF5){
                 //Populate can packet
-                AssembleTelemetryReportPacket(&packetToSend, 0x02, 0x01, 0x01, (current[0] << 8) + current[1]);
+                AssembleTelemetryReportPacket(&packetToSend, 0x02, 0x01, 0x01, current);
         
                 //send Can Packet
                 SendCANPacket(&packetToSend);
             }
         }
         
-        getCurrent(current);
+        uint16 val;
+        getCurrent(&current);
         Print("Current: ");
-        PrintInt((current[0] << 8) + current[1]);
+        PrintInt(current);
+        
+        getVoltage(&voltage);
+        Print("  Voltage: ");
+        PrintInt(voltage);
         Print("\n\r");
         
-        CyDelay(1000);
-        
-        
+        CyDelay(999);
     }
 }
 
@@ -135,11 +107,10 @@ void Initialize(void) {
 
     isr_Button_1_StartEx(Button_1_Handler);
     isr_Period_Reset_StartEx(Period_Reset_Handler);
-    CyGlobalIntEnable;
     
-    PrintInt(init_INA226());
+    int err = init_INA226();
+    PrintInt(err);
     Print("\r\nINITIALIZING\n\r");
-    DBG_UART_Start();
 }
 
 void DebugPrint(char input) {
