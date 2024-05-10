@@ -78,11 +78,11 @@ int main(void)
         }
         
         uint16 val;
-        getCurrent(&current);
+        getCurrent(SENSOR_1_ADDR, &current);
         Print("Current: ");
         PrintInt(current);
         
-        getVoltage(&voltage);
+        getVoltage(SENSOR_1_ADDR, &voltage);
         Print("  Voltage: ");
         PrintInt(voltage);
         Print("\n\r");
@@ -108,8 +108,14 @@ void Initialize(void) {
     isr_Button_1_StartEx(Button_1_Handler);
     isr_Period_Reset_StartEx(Period_Reset_Handler);
     
-    int err = init_INA226();
-    PrintInt(err);
+    int err1 = init_INA226(SENSOR_1_ADDR);
+    int err2 = init_INA226(SENSOR_2_ADDR);
+    int err3 = init_INA226(SENSOR_3_ADDR);
+    int err4 = init_INA226(SENSOR_4_ADDR);
+    PrintInt(err1);
+    PrintInt(err2);
+    PrintInt(err3);
+    PrintInt(err4);
     Print("\r\nINITIALIZING\n\r");
 }
 

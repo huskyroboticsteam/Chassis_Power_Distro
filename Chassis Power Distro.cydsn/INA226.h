@@ -3,6 +3,10 @@
 #include <stdint.h>
 
 #define DEVICE_ADDR                 0x40
+#define SENSOR_1_ADDR               0b10000000
+#define SENSOR_2_ADDR               0b10000001
+#define SENSOR_3_ADDR               0b10000100
+#define SENSOR_4_ADDR               0b10000101
 
 #define INA226_DEVICE_ID            (0x2260)
 #define INA226_RESET                (0x8000)
@@ -42,26 +46,27 @@ char debugOutput[32];
  
 uint8 address;
 
-uint8 reset();
-uint8 ping();
+uint8 reset(uint8);
+uint8 ping(uint8);
 
-uint8 init_INA226();
+uint8 init_INA226(uint8);
 
 // configure the device
-uint8 setShuntResistor(uint8);
-uint8 setAlertLimitBusVoltage(uint8);
-uint8 setAlertEnableBusUnderVoltage();
+uint8 setShuntResistor(uint8, uint8);
+uint8 setAlertLimitBusVoltage(uint8, uint8);
+uint8 setAlertEnableBusUnderVoltage(uint8);
 
 
 // functions used to retrieve the measurements from the device
-uint8 getShuntVoltage(uint16*);
-uint8 getVoltage(uint16*);
-uint8 getCurrent(uint16*);
-uint8 getPower(uint16*);
+uint8 getShuntVoltage(uint8, uint16*);
+uint8 getVoltage(uint8, uint16*);
+uint8 getCurrent(uint8, uint16*);
+uint8 getPower(uint8, uint16*);
+uint8 getCalibrationRegister(uint8, uint16*);
 
 
 // only for use
-uint8 readReg16(uint8 reg, uint16* val);
-uint8 writeReg16(uint8 reg, uint16 val);
-uint32 readRegister(uint8 reg, uint8 *output, uint8 cnt);
-uint32 writeRegister(uint8_t reg, uint8_t *data, uint8_t cnt);
+uint8 readReg16(uint8 deviceAddr, uint8 reg, uint16* val);
+uint8 writeReg16(uint8 deviceAddr, uint8 reg, uint16 val);
+//uint32 readRegister(uint8 reg, uint8 *output, uint8 cnt);
+//uint32 writeRegister(uint8_t reg, uint8_t *data, uint8_t cnt);

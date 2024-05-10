@@ -12,17 +12,18 @@
  *
  */
 
+
 #include "INA226.h"
 #include <math.h>
 
 #define TIMEOUT 20
 
-uint8_t init_INA226()
+uint8_t init_INA226(uint8 deviceAddr)
 {
     INA226_I2C_Start();
-    reset();
-    setShuntResistor(100);
-    return ping();
+    reset(deviceAddr);
+    setShuntResistor(deviceAddr, 100);
+    return ping(deviceAddr);
 }
 
 /**
@@ -32,8 +33,8 @@ uint8_t init_INA226()
  *   unsigned char         0 succes
  *                         1 fail
  */
-uint8_t reset() {
-   return writeReg16(INA226_REG_CONFIG, INA226_RESET);
+uint8_t reset(uint8 deviceAddr) {
+   return writeReg16(deviceAddr, INA226_REG_CONFIG, INA226_RESET);
 }
 
 /**
@@ -43,9 +44,9 @@ uint8_t reset() {
  *   unsigned char         1 device found
  *                         0 device not found
  */
-uint8_t ping() {
+uint8_t ping(uint8 deviceAddr) {
     uint16 id;
-    uint8 ret = readReg16(INA226_REG_ID, &id);
+    uint8 ret = readReg16(deviceAddr, INA226_REG_ID, &id);
     if (ret) id = 0;
     return id;
 }
@@ -60,24 +61,28 @@ uint8_t ping() {
  *   unsigned char         0 success
  *                         1 fail
  */
-uint8_t setShuntResistor(uint8 rShunt)
+uint8_t setShuntResistor(uint8 deviceAddr, uint8 rShunt)
 {    
-    return writeReg16(INA226_REG_CALIBRATION, INA226_CALIBRATION_REF / rShunt);
+    return writeReg16(deviceAddr, INA226_REG_CALIBRATION, INA226_CALIBRATION_REF / rShunt);
 }
 
-uint8_t setAlertLimitBusVoltage(uint8_t limit)
+uint8_t setAlertLimitBusVoltage(uint8 deviceAddr, uint8_t limit)
 {
     uint8_t data[1];
     data[0] = (uint8_t)(0.8 * limit);
-    return writeRegister(INA226_REG_ALERTLIMIT, data, 1);  //translate voltage to whole decimal (/2.5uV)
+    //return writeRegister(deviceAddr, INA226_REG_ALERTLIMIT, data, 1);  //translate voltage to whole decimal (/2.5uV)
+    return writeReg16(deviceAddr, INA226_REG_ALERTLIMIT, data[0]);
 }
 
-uint8_t setAlertEnableBusUnderVoltage()
+uint8_t setAlertEnableBusUnderVoltage(uint8 deviceAddr)
 {
     uint8_t data[2];
     data[0] = (INA226_BIT_BUL) >> 8;
     data[1] = 0;  //INA226_BIT_BUL;
-    return writeRegister(INA226_REG_MASKENABLE, data, 2);
+    
+    uint16_t val = data[0];
+    //return writeRegister(INA226_REG_MASKENABLE, data, 2);
+    return writeReg16(deviceAddr, INA226_REG_BUSVOLTAGE, data[0]);
 }
 
 /**
@@ -90,9 +95,9 @@ uint8_t setAlertEnableBusUnderVoltage()
  *   unsigned char         0 success
  *                         1 fail
  */
-uint8 getVoltage(uint16* v)
+uint8 getVoltage(uint8 deviceAddr, uint16* v)
 {
-    uint8 res = readReg16(INA226_REG_BUSVOLTAGE, v);
+    uint8 res = readReg16(deviceAddr, INA226_REG_BUSVOLTAGE, v);
     *v += (*v >> 2); // x1.25, cuz LSB = 1.25mV
     return res;
 }
@@ -107,10 +112,16 @@ uint8 getVoltage(uint16* v)
  *   unsigned char         0 success
  *                         1 fail
  */
-uint8 getShuntVoltage(uint16 *v)
+uint8 getShuntVoltage(uint8 deviceAddr, uint16 *v)
 {    
-    return readReg16(INA226_REG_SHUNTVOLTAGE, v);
+    return readReg16(deviceAddr, INA226_REG_SHUNTVOLTAGE, v);
 }
+
+uint8 getCalibrationRegister(uint8 deviceAddr, uint16 *c)
+{    
+    return readReg16(deviceAddr, INA226_REG_CALIBRATION, c);
+}
+
 
 /**
  *   Returns the current through the shunt resistor
@@ -122,9 +133,9 @@ uint8 getShuntVoltage(uint16 *v)
  *   unsigned char         0 success
  *                         1 fail
  */
-uint8 getCurrent(uint16 *c)
+uint8 getCurrent(uint8 deviceAddr, uint16 *c)
 {
-    return readReg16(INA226_REG_CURRENT, c);
+    return readReg16(deviceAddr, INA226_REG_CURRENT, c);
 }
 
 /**
@@ -137,21 +148,21 @@ uint8 getCurrent(uint16 *c)
  *   unsigned char         0 success
  *                         1 fail
  */
-uint8 getPower(uint16* p)
+uint8 getPower(uint8 deviceAddr, uint16* p)
 {
-    return readReg16(INA226_REG_POWER, p);
+    return readReg16(deviceAddr, INA226_REG_POWER, p);
     // *p = (*p * 3) + (*p >> 3); lol   
 }
 
-uint8 readReg16(uint8 reg, uint16* val) {
+uint8 readReg16(uint8 deviceAddr, uint8 reg, uint16* val) {
     uint8 b1, b2;
     INA226_I2C_I2CMasterClearStatus(); //clear the garbage
 
-	INA226_I2C_I2CMasterSendStart(DEVICE_ADDR, INA226_I2C_I2C_WRITE_XFER_MODE, TIMEOUT);
+	INA226_I2C_I2CMasterSendStart(deviceAddr, INA226_I2C_I2C_WRITE_XFER_MODE, TIMEOUT);
 	INA226_I2C_I2CMasterWriteByte(reg, TIMEOUT);
 	INA226_I2C_I2CMasterSendStop(TIMEOUT);
 	
-	INA226_I2C_I2CMasterSendStart(DEVICE_ADDR, INA226_I2C_I2C_READ_XFER_MODE, TIMEOUT);
+	INA226_I2C_I2CMasterSendStart(deviceAddr, INA226_I2C_I2C_READ_XFER_MODE, TIMEOUT);
 	INA226_I2C_I2CMasterReadByte(INA226_I2C_I2C_ACK_DATA, &b2, TIMEOUT);
     INA226_I2C_I2CMasterReadByte(INA226_I2C_I2C_NAK_DATA, &b1, TIMEOUT);
     
@@ -160,13 +171,14 @@ uint8 readReg16(uint8 reg, uint16* val) {
 	return err;
 }
 
-uint8 writeReg16(uint8 reg, uint16 val) {
+
+uint8 writeReg16(uint8 deviceAddr, uint8 reg, uint16 val) {
     uint8 b1, b2;
     b1 = val & 0xFF;
     b2 = val >> 8;
     INA226_I2C_I2CMasterClearStatus(); //clear the garbage
     
-    INA226_I2C_I2CMasterSendStart(DEVICE_ADDR, INA226_I2C_I2C_WRITE_XFER_MODE, TIMEOUT);
+    INA226_I2C_I2CMasterSendStart(deviceAddr, INA226_I2C_I2C_WRITE_XFER_MODE, TIMEOUT);
 	INA226_I2C_I2CMasterWriteByte(reg, TIMEOUT);
     
     INA226_I2C_I2CMasterWriteByte(b2, TIMEOUT);
@@ -174,3 +186,4 @@ uint8 writeReg16(uint8 reg, uint16 val) {
     
     return INA226_I2C_I2CMasterSendStop(TIMEOUT);
 }
+

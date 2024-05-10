@@ -26,6 +26,7 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
     uint8_t sender_SN = GetSenderDeviceSerialNumber(receivedPacket);
     int32_t data = 0;
     int err = 0;
+    uint8 current1, current2, current3, current4;
     
     switch(packageID){
         // Board-specific packets
@@ -49,16 +50,26 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
             break;
         
         case(ID_TELEMETRY_PULL):            
-            switch(DecodeTelemetryType(receivedPacket))
+             switch(DecodeTelemetryType(receivedPacket))
             {
                 // USE CONSTANTS FOR CASES
-                case(0):
-                    data = 105;
+                case(PACKET_TELEMETRY_SENSOR1):
+                    data = (int32)getCurrent(SENSOR_1_ADDR, &current1);
+                    break;
+                case(PACKET_TELEMETRY_SENSOR2):
+                    data = (int32)getCurrent(SENSOR_2_ADDR, &current2);
+                    break;
+                case(PACKET_TELEMETRY_SENSOR3):
+                    data = (int32)getCurrent(SENSOR_3_ADDR, &current3);
+                    break;
+                case(PACKET_TELEMETRY_SENSOR4):
+                    data = (int32)getCurrent(SENSOR_4_ADDR, &current4);
                     break;
                 default:
                     err = ERROR_INVALID_TTC;
                     break;
             }
+
             
             // Assemble and send packet
             AssembleTelemetryReportPacket(packetToSend, sender_DG, sender_SN, receivedPacket->data[3], data);
