@@ -25,6 +25,7 @@ volatile uint8_t CAN_time_LED = 0;
 volatile uint8_t ERROR_time_LED = 0;
 
 uint16 current, voltage;
+uint16 theshold;
 
 // UART stuff
 char txData[TX_DATA_SIZE];
@@ -33,6 +34,8 @@ char txData[TX_DATA_SIZE];
 CANPacket can_recieve;
 CANPacket can_send;
 uint8 address = 0;
+
+
 
 CY_ISR(Period_Reset_Handler) {
     CAN_time_LED++;
@@ -87,13 +90,19 @@ int main(void)
         PrintInt(voltage);
         Print("\n\r");
         
+        //Turns off converter if current is too high
+        /*
+        if(current > theshold){
+            PTN78020W_INHIBIT_Write(0);
+        }*/
+        
         CyDelay(999);
     }
 }
 
 void Initialize(void) {
     CyGlobalIntEnable; /* Enable global interrupts. LED arrays need this first */
-    
+    //PTN78020W_INHIBIT_Write(1);
     address = getSerialAddress();
     
     DBG_UART_Start();
