@@ -89,20 +89,21 @@ int main(void)
         Print("  Voltage: ");
         PrintInt(voltage);
         Print("\n\r");
-        
+        int data = (int32)getCurrent(SENSOR_1_ADDR, &current);
+        int data1 = (int32)getCurrent(SENSOR_2_ADDR, &current);
+        int data2 = (int32)getCurrent(SENSOR_3_ADDR, &current);
         //Turns off converter if current is too high
-        /*
-        if(current > theshold){
+        if(data > theshold || data1 > theshold || data2 > theshold){
             PTN78020W_INHIBIT_Write(0);
-        }*/
-        
+        }
+        ProcessCAN(&recievedPacket, &packetToSend);
         CyDelay(999);
     }
 }
 
 void Initialize(void) {
     CyGlobalIntEnable; /* Enable global interrupts. LED arrays need this first */
-    //PTN78020W_INHIBIT_Write(1);
+    PTN78020W_INHIBIT_Write(1);
     address = getSerialAddress();
     
     DBG_UART_Start();
