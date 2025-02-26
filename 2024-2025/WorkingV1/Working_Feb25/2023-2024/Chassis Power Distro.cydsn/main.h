@@ -21,12 +21,12 @@
 
 #define TX_DATA_SIZE            (100u)
 
-#define Print(message) UART_UartPutString(message)
-#define PrintChar(character) UART_UartPutChar(character)
-#define PrintInt(integer) UART_UartPutString(itoa(integer, txData, 10))
-#define PrintIntBin(integer) UART_UartPutString(itoa(integer, txData, 2))
+#define Print(message) UART_PutString(message)
+#define PrintChar(character) UART_PutChar(character)
+#define PrintInt(integer) UART_PutString(itoa(integer, txData, 10))
+#define PrintIntBin(integer) UART_PutString(itoa(integer, txData, 2))
 
-
+void PrintIntBuff(uint16_t);
 void Initialize(void);
 int getSerialAddress();
 void DebugPrint(char input);

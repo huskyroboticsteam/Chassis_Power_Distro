@@ -19,10 +19,12 @@
 #include "CAN_Stuff.h"
 #include "FSM_Stuff.h"
 #include "HindsightCAN/CANLibrary.h"
+#include "DataCapture.h"
 
 // LED stuff
 volatile uint8_t CAN_time_LED = 0;
 volatile uint8_t ERROR_time_LED = 0;
+char buffer[64];
 
 uint16 current, voltage;
 uint16 theshold;
@@ -33,7 +35,7 @@ char txData[TX_DATA_SIZE];
 // CAN stuff
 CANPacket can_recieve;
 CANPacket can_send;
-uint8 address = 0;
+uint8 address = 2; // dip addr
 
 
 
@@ -61,42 +63,35 @@ int main(void)
     CANPacket recievedPacket;
    
     for(;;)
-    {
-        err = 0;
-        
-        //Try to recieve can packet
-        int err = PollAndReceiveCANPacket(&recievedPacket);
-        
+    {     
         // Check if recieved packet
-        if(!err){      
-            //Get Packet ID
-            uint16_t packetID = GetPacketID(&recievedPacket);
-            if(packetID == 0xF5){
-                //Populate can packet
-                AssembleTelemetryReportPacket(&packetToSend, 0x02, 0x01, 0x01, current);
-        
-                //send Can Packet
-                SendCANPacket(&packetToSend);
-            }
+        if(!PollAndReceiveCANPacket(&recievedPacket)) {      
+            ProcessCAN(&recievedPacket, &packetToSend);
         }
+
+        railStateAssign(GetState());
         
-        uint16 val;
-        uint16 sensor1Current = getCurrent(SENSOR_1_ADDR);
-        Print("Sensor 1 Current: ");
-        PrintInt(current);
+        uint16 sensor3Current = getCurrent(ADDR_3_3V);
+        uint16 sensor5Current = getCurrent(ADDR_5V);
+        uint16 sensor12Current = getCurrent(ADDR_12V);
+        uint16 sensor24Current = getCurrent(ADDR_24V);
+        uint8 sensor3Voltage = getShuntVoltage(ADDR_3_3V);
+        uint8 sensor5Voltage = getShuntVoltage(ADDR_5V);
+        uint8 sensor12Voltage = getShuntVoltage(ADDR_12V);
+        uint8 sensor24Voltage = getShuntVoltage(ADDR_24V);
         
-        uint16 sensor1Voltage = getBusVoltage(SENSOR_1_ADDR);
-        Print("Sensor 1 Voltage: ");
-        PrintInt(voltage);
+        // debugging
+        Print("3V converted");
+        uint16 sensor3Conv = sensor3Current * CURLSB_3V;
+        PrintIntBuff(sensor3Conv);
         Print("\n\r");
-        int data = (int32)(getCurrent(SENSOR_1_ADDR) * readReg16(SENSOR_1_ADDR, CAL_REG));
-        int data1 = (int32)(getCurrent(SENSOR_2_ADDR) * readReg16(SENSOR_2_ADDR, CAL_REG));
-        int data2 = (int32)(getCurrent(SENSOR_3_ADDR) * readReg16(SENSOR_3_ADDR, CAL_REG));
-        //Turns off converter if current is too high
-        if(data > theshold || data1 > theshold || data2 > theshold){
-            PTN78020W_INHIBIT_Write(0);
-        }
-        ProcessCAN(&recievedPacket, &packetToSend);
+        Print("3v Voltage");
+        PrintIntBuff(sensor3Voltage);
+        Print("\n\r");
+//        //Turns off converter if current is too high
+//        if(data5v > theshold || data12v > theshold || data24v > theshold){
+//            PTN78020W_INHIBIT_Write(0);
+//        }
         CyDelay(999);
     }
 }
@@ -104,15 +99,16 @@ int main(void)
 void Initialize(void) {
     CyGlobalIntEnable; /* Enable global interrupts. LED arrays need this first */
     PTN78020W_INHIBIT_Write(1);
-    address = getSerialAddress();
     
     UART_Start();
-    sprintf(txData, "Dip Addr: %x \r\n", address);
-    Print(txData);
+    Print("Dip addr\n\r");
+    PrintIntBuff(address);
     
     LED_DBG_Write(0);
+    Print("\r\nDBG LED WRite 0\n\r");
     
-    InitCAN(0x4, (int)address);
+    InitCAN(0x3, (int)address);
+    Print("\r\nCAN INIT\n\r");
     Timer_Period_Reset_Start();
 
     isr_Button_1_StartEx(Button_1_Handler);
@@ -120,27 +116,24 @@ void Initialize(void) {
     
     // start I2C communication
     I2C_Start();
+    Print("\r\nI2C START\n\r");
     
-    int id1 = whoAmI(SENSOR_1_ADDR);
-    int id2 = whoAmI(SENSOR_2_ADDR);
-    int id3 = whoAmI(SENSOR_3_ADDR);
-    int id4 = whoAmI(SENSOR_4_ADDR);
-    PrintInt(id1);
-    PrintInt(id2);
-    PrintInt(id3);
-    PrintInt(id4);
+    // 5V only test
+    uint16 id5 = readReg16(ADDR_5V, ID_REG);
     Print("\r\nINA's IDENTIFIED\n\r");
-    
-    uint8 errCal1 = setCalibration(SENSOR_1_ADDR, SENSOR_1_SHUNT, SENSOR_1_CURLSB);
-    uint8 errCal2 = setCalibration(SENSOR_2_ADDR, SENSOR_2_SHUNT, SENSOR_2_CURLSB);
-    uint8 errCal3 = setCalibration(SENSOR_3_ADDR, SENSOR_3_SHUNT, SENSOR_3_CURLSB);
-    uint8 errCal4 = setCalibration(SENSOR_4_ADDR, SENSOR_4_SHUNT, SENSOR_4_CURLSB);
-    
-    PrintInt(errCal1);
-    PrintInt(errCal2);
-    PrintInt(errCal3);
-    PrintInt(errCal4);
+    PrintIntBuff(id5);
+
+    // Write calibration values
+    uint8 errCal1 =  writeReg16(ADDR_5V, CAL_REG, CAL_5V);
+    uint8 errCal2 =  writeReg16(ADDR_3_3V, CAL_REG, CAL_3V);
+    uint8 errCal3 =  writeReg16(ADDR_12V, CAL_REG, CAL_12V);
+    uint8 errCal4 =  writeReg16(ADDR_24V, CAL_REG, CAL_24V);
     Print("\r\nCALIBRATION SET\n\r");
+    PrintIntBuff(errCal1);
+    PrintIntBuff(errCal2);
+    PrintIntBuff(errCal3);
+    PrintIntBuff(errCal4);
+    
 }
 
 void DebugPrint(char input) {
@@ -158,6 +151,10 @@ void DebugPrint(char input) {
     Print(txData);
 }
 
+void PrintIntBuff(uint16_t num){
+    sprintf(buffer, "0x%d\r\n", num);
+    UART_PutString(buffer);
+}
 int getSerialAddress() {
     int address = 0;
     

@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <INA226.h>
 #include <stdint.h>
+#include "main.h"
 
 /*******************************************************************************
 * Function Name: whoAmiI
@@ -32,8 +33,8 @@
 * also display as 8800 in decimal.
 * 
 *******************************************************************************/
-    uint8 whoAmI(uint8 slaveAddr) {
-        uint8 deviceId = readReg16(slaveAddr, ID_REG);
+    uint16 whoAmI(uint8 slaveAddr) {
+        uint16 deviceId = readReg16(slaveAddr, ID_REG);
         return deviceId;
     }
 
@@ -93,7 +94,6 @@
 * 
 *******************************************************************************/
     uint16 readReg16(uint8 slaveAddr, uint8 reg) {
-        char buffer[64];
   
         uint8 Write_Buf[1] = {0};
         Write_Buf[0]=reg;
@@ -109,12 +109,12 @@
         
         uint16 result = (Read_Buf[0] << 8) | Read_Buf[1];
         
-        UART_UartPutString("Read Successful\r\n");
-        sprintf(buffer, "Raw Read_Buf: 0x%02X 0x%02X\r\n", Read_Buf[0], Read_Buf[1]);
-        UART_UartPutString(buffer);
-        sprintf(buffer, "Result in Hex: 0x%04X\r\n", result);
-        UART_UartPutString(buffer);
-        UART_UartPutString("\r\n'");
+        //UART_PutString("Read Successful\r\n");
+        //sprintf(buffer, "Raw Read_Buf: 0x%02X 0x%02X\r\n", Read_Buf[0], Read_Buf[1]);
+        //UART_PutString(buffer);
+        //sprintf(buffer, "Result in Hex: 0x%04X\r\n", result);
+        //UART_PutString(buffer);
+        //UART_PutString("\r\n'");
         
         return result;
     }
@@ -180,7 +180,7 @@
     uint8 getBusVoltage(uint8 slaveAddr) {
         uint16 busVoltage = readReg16(slaveAddr, BUS_REG); // unsigned result
         
-        return busVoltage; // type case to int16 to allow for negatives
+        return busVoltage; // type cast to int16 to allow for negatives
     }
     
 /*******************************************************************************
@@ -201,8 +201,8 @@
 
 *
 *******************************************************************************/
-    uint8 setCalibration(uint8 slaveAddr, uint8 rShunt, uint16 currentLSB) {
-        uint8  cal = (0.00512 / (currentLSB * rShunt)); // datasheet eqn 1
+    uint8 setCalibration(uint8 slaveAddr, uint16 rShunt, uint16 currentLSB) {
+        uint8  cal = (0.00512 / (currentLSB * rShunt/1000)); // datasheet eqn 1
         
         uint8 errStatus = writeReg16(slaveAddr, CAL_REG, cal);
         
@@ -225,7 +225,7 @@
 ********************************************************************************
 *
 *******************************************************************************/
-    uint8 getShuntVoltage(uint8 slaveAddr) {
+    uint16 getShuntVoltage(uint8 slaveAddr) {
         uint16 shuntVoltage = readReg16(slaveAddr, SHUNT_REG); // unsigned result
         
         return (int16)shuntVoltage; // type case to int16 to allow for negatives

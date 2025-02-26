@@ -2,22 +2,26 @@
 #include "stdlib.h"
 #include <stdint.h>
 
-#define DEVICE_ADDR                 0x40
-#define SENSOR_1_ADDR               0b0100000 // 7-bit address
-#define SENSOR_2_ADDR               0b0100001
-#define SENSOR_3_ADDR               0b0100010
-#define SENSOR_4_ADDR               0b0100011
+#define ADDR_24V                    0b1000000 // 7 bit addrs
+#define ADDR_5V                     0b1000001
+#define ADDR_12V                    0b1000101 
+#define ADDR_3_3V                   0b1000100 
 
 
-#define SENSOR_1_SHUNT              0x64
-#define SENSOR_2_SHUNT              0x64
-#define SENSOR_3_SHUNT              0x64
-#define SENSOR_4_SHUNT              0x64
+#define SENSOR_1_SHUNT              0xA // in mOhm -> 10 mOhm
+#define SENSOR_2_SHUNT              0xA
+#define SENSOR_3_SHUNT              0xA
+#define SENSOR_4_SHUNT              0xA
 
-#define SENSOR_1_CURLSB             0x56CE
-#define SENSOR_2_CURLSB             0x56CE
-#define SENSOR_3_CURLSB             0x56CE
-#define SENSOR_4_CURLSB             0x56CE
+#define CURLSB_3V                   0x1 // in mA -> 1 mA/bit resolution
+#define CURLSB_5V                   0x1
+#define CURLSB_12V                  0x1
+#define CURLSB_24V                  0x1
+
+#define CAL_3V                      0x200 // .00512/ curr_lsb * rshunt          
+#define CAL_5V                      0x200
+#define CAL_12V                     0x200
+#define CAL_24V                     0x200
 
 #define INA226_DEVICE_ID            (0x2260)
 #define INA226_RESET                (0x8000)
@@ -54,14 +58,14 @@ char debugOutput[32];
 #define TIMEOUT     20
 
 // functions
-uint8 whoAmI(uint8 slaveAddr);
+uint16 whoAmI(uint8 slaveAddr);
 uint8 writeReg16(uint8 slaveAddr, uint8 reg, uint16 val);
 uint16 readReg16(uint8 slaveAddr, uint8 regAddr);
 uint8 reset(uint8 slaveAddr);
 uint16 getCurrent(uint8 slaveAddr);
 uint8 getBusVoltage(uint8 slaveAddr);
-uint8 setCalibration(uint8 slaveAddr, uint8 rShunt, uint16 currentLSB);
-uint8 getShuntVoltage(uint8 slaveAddr);
+uint8 setCalibration(uint8 slaveAddr, uint16 rShunt, uint16 currentLSB);
+uint16 getShuntVoltage(uint8 slaveAddr);
 uint8 setEnable(uint8 slaveAddr, uint8 val);
 
 /* [] END OF FILE */
