@@ -53,18 +53,34 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
              switch(DecodeTelemetryType(receivedPacket))
             {
                 // USE CONSTANTS FOR CASES
-                case(PACKET_TELEMETRY_SENSOR1):
-                    data = (int32)getCurrent(SENSOR_1_ADDR, &current1);
+                case(PACKET_TELEMETRY_SENSOR1): {
+                    uint16 sensor1Current = getCurrent(SENSOR_1_ADDR);
+                    uint16 sensor1Resolution = readReg16(SENSOR_1_ADDR, CAL_REG);
+                    uint16 converted_current = sensor1Current * sensor1Resolution;
+                    data = (int32)converted_current;
                     break;
-                case(PACKET_TELEMETRY_SENSOR2):
-                    data = (int32)getCurrent(SENSOR_2_ADDR, &current2);
+                }
+                case(PACKET_TELEMETRY_SENSOR2): {
+                    uint16 sensor2Current = getCurrent(SENSOR_2_ADDR);
+                    uint16 sensor2Resolution = readReg16(SENSOR_2_ADDR, CAL_REG);
+                    uint16 converted_current = sensor2Current * sensor2Resolution;
+                    data = (int32)converted_current;
                     break;
-                case(PACKET_TELEMETRY_SENSOR3):
-                    data = (int32)getCurrent(SENSOR_3_ADDR, &current3);
+                }
+                case(PACKET_TELEMETRY_SENSOR3): {
+                    uint16 sensor3Current = getCurrent(SENSOR_3_ADDR);
+                    uint16 sensor3Resolution = readReg16(SENSOR_3_ADDR, CAL_REG);
+                    uint16 converted_current = sensor3Current * sensor3Resolution;
+                    data = (int32)converted_current;
                     break;
-                case(PACKET_TELEMETRY_SENSOR4):
-                    data = (int32)getCurrent(SENSOR_4_ADDR, &current4);
+                }
+                case(PACKET_TELEMETRY_SENSOR4): {
+                    uint16 sensor4Current = getCurrent(SENSOR_4_ADDR);
+                    uint16 sensor4Resolution = readReg16(SENSOR_4_ADDR, CAL_REG);
+                    uint16 converted_current = sensor4Current * sensor4Resolution;
+                    data = (int32)converted_current;
                     break;
+                }
                 default:
                     err = ERROR_INVALID_TTC;
                     break;

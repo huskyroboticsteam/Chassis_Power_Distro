@@ -1,189 +1,270 @@
-/*
- * Copyright (c) 2016 by Stefano Speretta <s.speretta@tudelft.nl>
+/* ======================================================
  *
- * INA226: a library to provide high level APIs to interface with the
- * TI INA226 current sensor. It is possible to use this library in
- * Energia (the Arduino port for MSP microcontrollers) or in other
- * toolchains.
+ * Copyright I went insane making this Co., Noah Tanner
+ * All Rights Reserved
+ * UNPUBLISHED, LICENSED SOFTWARE.
  *
- * This file is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License
- * version 3, both as published by the Free Software Foundation.
+ * CONFIDENTIAL AND PROPRIETARY INFORMATION
+ * WHICH IS THE PROPERTY OF I went insane making this Co.
  *
- */
+ * ======================================================
+*/
+#include <project.h>
+#include <stdio.h>
+#include <INA226.h>
+#include <stdint.h>
 
+/*******************************************************************************
+* Function Name: whoAmiI
+********************************************************************************
+*
+* Returns the device Die ID Register contents to ensure that I2C communication 
+* is setup correctly. Likely the first function you will want to run to make 
+* sure your INA226 is correctly setup.
+*
+* \param slaveAddr
+* Right justified 7-bit Slave address (valid range 8 to 120). This is dependent
+* on your hardware configuration and how you setup A0 and A1
+* 
+* \return Read_Buf
+* Read_Buf is a 2 element array that contains the MSB (Read_Buf[0]), and the
+* LSB (Read_Buf[0]) of the Die ID register. It should return 0x2260, which can 
+* also display as 8800 in decimal.
+* 
+*******************************************************************************/
+    uint8 whoAmI(uint8 slaveAddr) {
+        uint8 deviceId = readReg16(slaveAddr, ID_REG);
+        return deviceId;
+    }
 
-#include "INA226.h"
-#include <math.h>
-
-#define TIMEOUT 20
-
-uint8_t init_INA226(uint8 deviceAddr)
-{
-    INA226_I2C_Start();
-    reset(deviceAddr);
-    setShuntResistor(deviceAddr, 100);
-    return ping(deviceAddr);
-}
-
-/**
- *   Reset the INA226
- *
- *   Returns:
- *   unsigned char         0 succes
- *                         1 fail
- */
-uint8_t reset(uint8 deviceAddr) {
-   return writeReg16(deviceAddr, INA226_REG_CONFIG, INA226_RESET);
-}
-
-/**
- *   Verify if INA226 is present
- *
- *   Returns:
- *   unsigned char         1 device found
- *                         0 device not found
- */
-uint8_t ping(uint8 deviceAddr) {
-    uint16 id;
-    uint8 ret = readReg16(deviceAddr, INA226_REG_ID, &id);
-    if (ret) id = 0;
-    return id;
-}
-
-/**
- *   Sets the shunt resistor value in mOhm
- *
- *   Parameters:
- *   unsigned short shunt  shunt resistor value in mOhm
- *
- *   Returns:
- *   unsigned char         0 success
- *                         1 fail
- */
-uint8_t setShuntResistor(uint8 deviceAddr, uint8 rShunt)
-{    
-    return writeReg16(deviceAddr, INA226_REG_CALIBRATION, INA226_CALIBRATION_REF / rShunt);
-}
-
-uint8_t setAlertLimitBusVoltage(uint8 deviceAddr, uint8_t limit)
-{
-    uint8_t data[1];
-    data[0] = (uint8_t)(0.8 * limit);
-    //return writeRegister(deviceAddr, INA226_REG_ALERTLIMIT, data, 1);  //translate voltage to whole decimal (/2.5uV)
-    return writeReg16(deviceAddr, INA226_REG_ALERTLIMIT, data[0]);
-}
-
-uint8_t setAlertEnableBusUnderVoltage(uint8 deviceAddr)
-{
-    uint8_t data[2];
-    data[0] = (INA226_BIT_BUL) >> 8;
-    data[1] = 0;  //INA226_BIT_BUL;
+/*******************************************************************************
+* Function Name: writeReg16
+********************************************************************************
+*
+* writes an input data buffer into a specific register on a specific INA226
+*
+* \param slaveAddr
+* Right justified 7-bit Slave address (valid range 8 to 120). This is dependent
+* on your hardware configuration and how you setup A0 and A1
+*
+* \param reg 
+* Register on the INA226 that you want to read. See the INA226 datasheets for more
+* details on register values and contents.
+*
+* \param val
+* value that is to be input into the INA226
+* 
+* \return Read_Buf
+* Read_Buf is a 2 element array that contains the MSB (Read_Buf[0]), and the
+* LSB (Read_Buf[0]) of the register that was read
+* 
+*******************************************************************************/
+    uint8 writeReg16(uint8 slaveAddr, uint8 reg, uint16 val) {
+        
+        uint8 write_Buf[3];             // define a 3 item array to be written
+        write_Buf[0] = reg;             // register to write data to
+        write_Buf[1] = (val >> 8);      // MSB of val
+        write_Buf[2] = (val & 0xFF);    // LSB of val
+        
+        uint8 errStatus = I2C_I2CMasterWriteBuf(slaveAddr, write_Buf, 3,  I2C_I2C_MODE_COMPLETE_XFER);
+        while((I2C_I2CMasterStatus() & I2C_I2C_MSTAT_WR_CMPLT) == 0){}
+        
+        return errStatus;
+    }    
     
-    uint16_t val = data[0];
-    //return writeRegister(INA226_REG_MASKENABLE, data, 2);
-    return writeReg16(deviceAddr, INA226_REG_BUSVOLTAGE, data[0]);
-}
-
-/**
- *   Returns the bus voltage in mV
- *
- *   Parameters:
- *   unsigned short &      bus voltage in mV
- *
- *   Returns:
- *   unsigned char         0 success
- *                         1 fail
- */
-uint8 getVoltage(uint8 deviceAddr, uint16* v)
-{
-    uint8 res = readReg16(deviceAddr, INA226_REG_BUSVOLTAGE, v);
-    *v += (*v >> 2); // x1.25, cuz LSB = 1.25mV
-    return res;
-}
-
-/**
- *   Returns the voltage across the shunt resistor
- *
- *   Parameters:
- *   signed short &      bus voltage (LSB = 2.5 uV)
- *
- *   Returns:
- *   unsigned char         0 success
- *                         1 fail
- */
-uint8 getShuntVoltage(uint8 deviceAddr, uint16 *v)
-{    
-    return readReg16(deviceAddr, INA226_REG_SHUNTVOLTAGE, v);
-}
-
-uint8 getCalibrationRegister(uint8 deviceAddr, uint16 *c)
-{    
-    return readReg16(deviceAddr, INA226_REG_CALIBRATION, c);
-}
-
-
-/**
- *   Returns the current through the shunt resistor
- *
- *   Parameters:
- *   signed short &        current in mA
- *
- *   Returns:
- *   unsigned char         0 success
- *                         1 fail
- */
-uint8 getCurrent(uint8 deviceAddr, uint16 *c)
-{
-    return readReg16(deviceAddr, INA226_REG_CURRENT, c);
-}
-
-/**
- *   Returns the power across the load in mW
- *
- *   Parameters:
- *   unsigned short &      power in mW
- *
- *   Returns:
- *   unsigned char         0 success
- *                         1 fail
- */
-uint8 getPower(uint8 deviceAddr, uint16* p)
-{
-    return readReg16(deviceAddr, INA226_REG_POWER, p);
-    // *p = (*p * 3) + (*p >> 3); lol   
-}
-
-uint8 readReg16(uint8 deviceAddr, uint8 reg, uint16* val) {
-    uint8 b1, b2;
-    INA226_I2C_I2CMasterClearStatus(); //clear the garbage
-
-	INA226_I2C_I2CMasterSendStart(deviceAddr, INA226_I2C_I2C_WRITE_XFER_MODE, TIMEOUT);
-	INA226_I2C_I2CMasterWriteByte(reg, TIMEOUT);
-	INA226_I2C_I2CMasterSendStop(TIMEOUT);
-	
-	INA226_I2C_I2CMasterSendStart(deviceAddr, INA226_I2C_I2C_READ_XFER_MODE, TIMEOUT);
-	INA226_I2C_I2CMasterReadByte(INA226_I2C_I2C_ACK_DATA, &b2, TIMEOUT);
-    INA226_I2C_I2CMasterReadByte(INA226_I2C_I2C_NAK_DATA, &b1, TIMEOUT);
+/*******************************************************************************
+* Function Name: readReg16
+********************************************************************************
+*
+* Reads a 16 bit register on the INA226 and returns the contents
+*
+* \param slaveAddr
+* Right justified 7-bit Slave address (valid range 8 to 120). This is dependent
+* on your hardware configuration and how you setup A0 and A1
+*
+*
+* \param reg 
+* Register on the INA226 that you want to read. See the INA226 datasheets for more
+* details on register values and contents.
+* 
+* \return Read_Buf
+* Read_Buf is a 2 element array that contains the MSB (Read_Buf[0]), and the
+* LSB (Read_Buf[0]) of the register that was read
+* 
+*******************************************************************************/
+    uint16 readReg16(uint8 slaveAddr, uint8 reg) {
+        char buffer[64];
+  
+        uint8 Write_Buf[1] = {0};
+        Write_Buf[0]=reg;
+        
+        uint8 Read_Buf[2] = {0}; // 2 byte register, 16 bit
+        
+        I2C_I2CMasterWriteBuf(slaveAddr, (uint8 *)Write_Buf, 1,  I2C_I2C_MODE_NO_STOP);
+        while((I2C_I2CMasterStatus() & I2C_I2C_MSTAT_WR_CMPLT) == 0){
+        }
+        
+        I2C_I2CMasterReadBuf(slaveAddr, (uint8 *)Read_Buf, 2, I2C_I2C_MODE_REPEAT_START);
+        while((I2C_I2CMasterStatus() & I2C_I2C_MSTAT_RD_CMPLT) == 0) {}
+        
+        uint16 result = (Read_Buf[0] << 8) | Read_Buf[1];
+        
+        UART_UartPutString("Read Successful\r\n");
+        sprintf(buffer, "Raw Read_Buf: 0x%02X 0x%02X\r\n", Read_Buf[0], Read_Buf[1]);
+        UART_UartPutString(buffer);
+        sprintf(buffer, "Result in Hex: 0x%04X\r\n", result);
+        UART_UartPutString(buffer);
+        UART_UartPutString("\r\n'");
+        
+        return result;
+    }
     
-    int err = INA226_I2C_I2CMasterSendStop(TIMEOUT);
-    *val = ((uint16) b2 << 8) | b1;
-	return err;
-}
+/*******************************************************************************
+* Function Name: reset
+********************************************************************************
+*
+* Resets the specified INA226
+*
+* \param slaveAddr
+* Right justified 7-bit Slave address (valid range 8 to 120). This is dependent
+* on your hardware configuration and how you setup A0 and A1
+*
+* \return errSatus
+* Value of error status from I2C API function. Shouldn't matter unless you are 
+* troubleshooting, then this value would be very, very helpful!
+* 
+*******************************************************************************/
+    uint8 reset(uint8 slaveAddr) {
+        uint8 errStatus = writeReg16(slaveAddr, CONFIG_REG, RESET);
+        return errStatus;
+    }
 
+/*******************************************************************************
+* Function Name: getCurrent
+********************************************************************************
+*
+* Returns the current register, calculated by multiplaying the decimal value
+* in the shunt voltage register with the decimal equivalent value of the
+* calibration register
+*
+* \param slaveAddr
+* Right justified 7-bit Slave address (valid range 8 to 120). This is dependent
+* on your hardware configuration and how you setup A0 and A1
+* 
+* \return current
+* value of current register multiplied by the resolution. if averaging is enabled, it will display the
+* averaged value
+*
+*******************************************************************************/
+    uint16 getCurrent(uint8 slaveAddr) {
+        uint16 current = readReg16(slaveAddr, CUR_REG); // unsigned result
+        
+        return current;
+    }
+    
+/*******************************************************************************
+* Function Name: getBusVoltage
+********************************************************************************
+*
+* Returns the most recent bus voltage reading
+*
+* \param slaveAddr
+* Right justified 7-bit Slave address (valid range 8 to 120). This is dependent
+* on your hardware configuration and how you setup A0 and A1
+* 
+* \return busVoltage
+* most recent bus voltage. Note that if averaging is enabled, it displays the
+* most recent value
+*
+*******************************************************************************/
+    uint8 getBusVoltage(uint8 slaveAddr) {
+        uint16 busVoltage = readReg16(slaveAddr, BUS_REG); // unsigned result
+        
+        return busVoltage; // type case to int16 to allow for negatives
+    }
+    
+/*******************************************************************************
+* Function Name: setCalibration
+********************************************************************************
+*
+* Programs the calibration register for the INA226 based on the equation (1) in
+* the datasheet. The register that is programmed sets the full scale range and 
+* lsb of the current and power measurements and acts as an overall system
+* calibration. Page 15 in the datasheet explains the math behind the 
+* calibration.
+*
+* \param rShunt
+* shunt resistor value that is in the circuit
+*
+* \param currentLSB
+* a convenient, selected value for the LSB for the current register. 
 
-uint8 writeReg16(uint8 deviceAddr, uint8 reg, uint16 val) {
-    uint8 b1, b2;
-    b1 = val & 0xFF;
-    b2 = val >> 8;
-    INA226_I2C_I2CMasterClearStatus(); //clear the garbage
-    
-    INA226_I2C_I2CMasterSendStart(deviceAddr, INA226_I2C_I2C_WRITE_XFER_MODE, TIMEOUT);
-	INA226_I2C_I2CMasterWriteByte(reg, TIMEOUT);
-    
-    INA226_I2C_I2CMasterWriteByte(b2, TIMEOUT);
-    INA226_I2C_I2CMasterWriteByte(b1, TIMEOUT);
-    
-    return INA226_I2C_I2CMasterSendStop(TIMEOUT);
-}
+*
+*******************************************************************************/
+    uint8 setCalibration(uint8 slaveAddr, uint8 rShunt, uint16 currentLSB) {
+        uint8  cal = (0.00512 / (currentLSB * rShunt)); // datasheet eqn 1
+        
+        uint8 errStatus = writeReg16(slaveAddr, CAL_REG, cal);
+        
+        return errStatus;
+    }
 
+/*******************************************************************************
+* Function Name: getShuntVoltage
+*
+* Returns the current shunt voltage reading, Vshunt. A negative number is 
+* represented in two's complement fomrat. ( MSB='1' means negative Vshunt )
+*
+* \param slaveAddr
+* Right justified 7-bit Slave address (valid range 8 to 120). This is dependent
+* on your hardware configuration and how you setup A0 and A1
+*   
+* \return shuntVoltage
+* 16 bit value of the current shunt voltage represented in 2's complement form
+*
+********************************************************************************
+*
+*******************************************************************************/
+    uint8 getShuntVoltage(uint8 slaveAddr) {
+        uint16 shuntVoltage = readReg16(slaveAddr, SHUNT_REG); // unsigned result
+        
+        return (int16)shuntVoltage; // type case to int16 to allow for negatives
+    }
+
+/*******************************************************************************
+* Function Name: setEnable
+********************************************************************************
+*
+* Programs the mast/enable register if control over the Alert pin is desired. If
+* multiple functions are enabled, the highest significant bit position (D15-D11)
+* takes priority and responds to the alert limit register
+*
+* \param slaveAddr
+* Right justified 7-bit Slave address (valid range 8 to 120). This is dependent
+* on your hardware configuration and how you setup A0 and A1
+*
+* \param val
+* value to choose when an alert is enabled:
+*       Bit 15 - Shunt Voltage > Alert Limit Register
+*       Bit 14 - Shunt Voltage < Alert Limit Register
+*       Bit 13 - Bus Voltage > Alert Limit Register
+*       Bit 12 - Bus Voltage < Alert Limit Register
+*       Bit 11 - Power > Alert Limit Register
+*       Bit 10 - on Conversion Ready Flag (bit 3) high
+*       Bit 4 - Alert function flag, see datasheet
+*       Bit 3 - Conversion ready flag, see datasheet
+*       Bit 2 - Math overflow, sets this bit high
+*       Bit 1 - Alert polarity. 1 = inverted (active-high open collecter)),
+*               0 = normal (active-low open collector) (default)
+*       Bit 0 - Alert Latch. Configures latching. 1 = latch enabled, 
+*               0 = latch disabled, transparent. See datasheet once again
+*               learn to lie for that datasheet, all 40 pages of it...
+*
+*******************************************************************************/
+    uint8 setEnable(uint8 slaveAddr, uint8 val) {
+        
+        uint8 errStatus = writeReg16(slaveAddr, ENBL_REG, val);
+        
+        return errStatus;
+    }
+/* [] END OF FILE */

@@ -1,4 +1,4 @@
-/* ========================================
+ /* ========================================
  *
  * Copyright YOUR COMPANY, THE YEAR
  * All Rights Reserved
@@ -81,17 +81,17 @@ int main(void)
         }
         
         uint16 val;
-        getCurrent(SENSOR_1_ADDR, &current);
-        Print("Current: ");
+        uint16 sensor1Current = getCurrent(SENSOR_1_ADDR);
+        Print("Sensor 1 Current: ");
         PrintInt(current);
         
-        getVoltage(SENSOR_1_ADDR, &voltage);
-        Print("  Voltage: ");
+        uint16 sensor1Voltage = getBusVoltage(SENSOR_1_ADDR);
+        Print("Sensor 1 Voltage: ");
         PrintInt(voltage);
         Print("\n\r");
-        int data = (int32)getCurrent(SENSOR_1_ADDR, &current);
-        int data1 = (int32)getCurrent(SENSOR_2_ADDR, &current);
-        int data2 = (int32)getCurrent(SENSOR_3_ADDR, &current);
+        int data = (int32)(getCurrent(SENSOR_1_ADDR) * readReg16(SENSOR_1_ADDR, CAL_REG));
+        int data1 = (int32)(getCurrent(SENSOR_2_ADDR) * readReg16(SENSOR_2_ADDR, CAL_REG));
+        int data2 = (int32)(getCurrent(SENSOR_3_ADDR) * readReg16(SENSOR_3_ADDR, CAL_REG));
         //Turns off converter if current is too high
         if(data > theshold || data1 > theshold || data2 > theshold){
             PTN78020W_INHIBIT_Write(0);
@@ -106,7 +106,7 @@ void Initialize(void) {
     PTN78020W_INHIBIT_Write(1);
     address = getSerialAddress();
     
-    DBG_UART_Start();
+    UART_Start();
     sprintf(txData, "Dip Addr: %x \r\n", address);
     Print(txData);
     
@@ -118,15 +118,29 @@ void Initialize(void) {
     isr_Button_1_StartEx(Button_1_Handler);
     isr_Period_Reset_StartEx(Period_Reset_Handler);
     
-    int err1 = init_INA226(SENSOR_1_ADDR);
-    int err2 = init_INA226(SENSOR_2_ADDR);
-    int err3 = init_INA226(SENSOR_3_ADDR);
-    int err4 = init_INA226(SENSOR_4_ADDR);
-    PrintInt(err1);
-    PrintInt(err2);
-    PrintInt(err3);
-    PrintInt(err4);
-    Print("\r\nINITIALIZING\n\r");
+    // start I2C communication
+    I2C_Start();
+    
+    int id1 = whoAmI(SENSOR_1_ADDR);
+    int id2 = whoAmI(SENSOR_2_ADDR);
+    int id3 = whoAmI(SENSOR_3_ADDR);
+    int id4 = whoAmI(SENSOR_4_ADDR);
+    PrintInt(id1);
+    PrintInt(id2);
+    PrintInt(id3);
+    PrintInt(id4);
+    Print("\r\nINA's IDENTIFIED\n\r");
+    
+    uint8 errCal1 = setCalibration(SENSOR_1_ADDR, SENSOR_1_SHUNT, SENSOR_1_CURLSB);
+    uint8 errCal2 = setCalibration(SENSOR_2_ADDR, SENSOR_2_SHUNT, SENSOR_2_CURLSB);
+    uint8 errCal3 = setCalibration(SENSOR_3_ADDR, SENSOR_3_SHUNT, SENSOR_3_CURLSB);
+    uint8 errCal4 = setCalibration(SENSOR_4_ADDR, SENSOR_4_SHUNT, SENSOR_4_CURLSB);
+    
+    PrintInt(errCal1);
+    PrintInt(errCal2);
+    PrintInt(errCal3);
+    PrintInt(errCal4);
+    Print("\r\nCALIBRATION SET\n\r");
 }
 
 void DebugPrint(char input) {
